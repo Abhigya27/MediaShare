@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 from src.imagekt import imagekit
+import uuid
 import os
 import shutil
 import tempfile
@@ -43,9 +44,6 @@ async def upload(file: UploadFile = File(...), title: str = Form(""),
                 )
 
         upload_result = await run_in_threadpool(upload_to_imagekit)
-        status_code = upload_result.response_metadata.http_status_code
-        if status_code < 200 or status_code >= 300:
-            raise HTTPException(status_code=502, detail="Image upload failed")
 
         post = Post(
             title=title,
@@ -87,3 +85,20 @@ async def get_feed(session: AsyncSession = Depends(get_session)):
             }
         )
     return {"posts": posts_data}
+
+
+@app.delete("/posts/{post_id}")
+async def delete_post(post_id: str, session: AsyncSession = Depends(get_session)):
+    try:
+        post_uuid = uuid.UUID(post_id)
+        result = await session.execute(select(Post).where(Post.id == post_uuid))
+        post = result.scalars().first()
+
+        if not post:
+            raise HTTPException(status_code=404, detail="post not found")
+        await session.delete(post)
+        await session.commit()
+
+        return {"message" : "post deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
