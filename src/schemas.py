@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from fastapi import schemas
 
 from pydantic import BaseModel, ConfigDict
 
@@ -17,3 +18,12 @@ class PostResponse(BaseModel):
     file_type: str
     file_name: str
     created_at: datetime
+
+class UserRead(schemas.BaseUser[uuid.UUID]):
+    pass
+
+class UserCreate(schemas.BaseUserCreate):
+    pass
+
+class UserUpdate(schemas.BaseUserUpdate):
+    pass
