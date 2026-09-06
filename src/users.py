@@ -5,8 +5,11 @@ from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin, models
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users.db import SQLAlchemyUserDatabase
 from src.db import User, get_user_db
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-SECRET = "sakjdhkjad872323"
+SECRET = os.getenv("SECRET")
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
