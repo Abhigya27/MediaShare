@@ -3,7 +3,7 @@ import requests
 import base64
 import urllib.parse
 
-st.set_page_config(page_title="Simple Social", layout="wide")
+st.set_page_config(page_title="MediaShare", layout="wide")
 
 # Initialize session state
 if 'token' not in st.session_state:
@@ -20,7 +20,7 @@ def get_headers():
 
 
 def login_page():
-    st.title("🚀 Welcome to Simple Social")
+    st.title("🚀 Welcome to MediaShare")
 
     # Simple form with two buttons
     email = st.text_input("Email:")
@@ -74,7 +74,7 @@ def upload_page():
         with st.spinner("Uploading..."):
             files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
             data = {"caption": caption}
-            response = requests.post("http://localhost:8000/upload", files=files, data=data, headers=get_headers())
+            response = requests.post("http://localhost:8000/post", files=files, data=data, headers=get_headers())
 
             if response.status_code == 200:
                 st.success("Posted!")
