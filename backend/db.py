@@ -22,6 +22,7 @@ Base = declarative_base()
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
+    username = Column(String(length=32), unique=True, index=True, nullable=False)
     posts = relationship("Post", back_populates="user")
 
 
@@ -41,10 +42,11 @@ async def create_db_model():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(_migrate_posts_table)
+        await conn.run_sync(_migrate_users_table)
 
 
 def _migrate_posts_table(connection):
-    """Bring the original posts table up to date without deleting uploads."""
+
     inspector = inspect(connection)
     if "posts" not in inspector.get_table_names():
         return
@@ -63,6 +65,37 @@ def _migrate_posts_table(connection):
         connection.execute(
             text("UPDATE posts SET user_id = :user_id WHERE user_id IS NULL"),
             {"user_id": first_user},
+        )
+
+
+def _migrate_users_table(connection):
+
+    inspector = inspect(connection)
+    if "user" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("user")}
+    if "username" in columns:
+        return
+
+    connection.execute(text('ALTER TABLE "user" ADD COLUMN username VARCHAR(32)'))
+
+    # Backfill existing rows with a placeholder derived from their email so
+    # everyone has a usable username right away; they can change it later
+    # via PATCH /users/me.
+    rows = connection.execute(text('SELECT id, email FROM "user"')).fetchall()
+    taken = set()
+    for row in rows:
+        base = (row.email.split("@")[0] or "user")[:28]
+        candidate = base
+        suffix = 1
+        while candidate in taken:
+            candidate = f"{base}{suffix}"
+            suffix += 1
+        taken.add(candidate)
+        connection.execute(
+            text('UPDATE "user" SET username = :username WHERE id = :id'),
+            {"username": candidate, "id": row.id},
         )
 
 
