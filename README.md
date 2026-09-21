@@ -4,7 +4,7 @@
 ### 🔗 [**Check it out — Live Demo**](https://your-app-name.onrender.com)
 *(API docs / Swagger UI: [`/docs`](https://your-api-name.onrender.com/docs))*
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![Python](https://img.shields.io/badge/Python-3.12+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
 ![Streamlit](https://img.shields.io/badge/Streamlit-frontend-FF4B4B)
 
