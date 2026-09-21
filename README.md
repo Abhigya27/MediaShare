@@ -59,7 +59,7 @@ separately.
 ```
 .
 ├── app.py                   # Streamlit frontend
-├── requirements.txt          # frontend dependencies
+├── pyproject.toml          # dependencies
 ├── backend/
 │   ├── main.py                # FastAPI app + routes
 │   ├── users.py                # auth: UserManager, JWT strategy, bcrypt hashing
@@ -67,7 +67,7 @@ separately.
 │   ├── schemas.py                 # Pydantic request/response models
 │   ├── rate_limit.py                # per-user upload rate limiter
 │   ├── imagekt.py                     # ImageKit client
-│   └── requirements.txt                # backend dependencies
+│
 ├── .env.example
 └── LICENSE
 ```
@@ -83,8 +83,7 @@ cd mediashare
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 
-pip install -r backend/requirements.txt
-pip install -r requirements.txt
+uv sync
 
 cp .env.example .env          # then fill in your own values
 ```
@@ -161,7 +160,7 @@ Render Dashboard → **New → Web Service** → select your repo.
 | Setting        | Value                                                     |
 |------------------|--------------------------------------------------------------|
 | Environment       | Python 3                                                        |
-| Build Command      | `pip install -r backend/requirements.txt`                        |
+| Build Command      | `uv sync`                        |
 | Start Command       | `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`             |
 | Env vars              | `DATABASE_URL`, `SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_URL` |
 
@@ -174,7 +173,7 @@ Render Dashboard → **New → Web Service** → same repo.
 | Setting        | Value                                                             |
 |------------------|------------------------------------------------------------------------|
 | Environment       | Python 3                                                                |
-| Build Command      | `pip install -r requirements.txt`                                        |
+| Build Command      | `uv sync`                                        |
 | Start Command       | `streamlit run app.py --server.port $PORT --server.address 0.0.0.0`        |
 | Env vars              | `API_BASE_URL` = the backend URL from step 3                                 |
 
@@ -188,5 +187,4 @@ upload something, confirm it shows in the feed.
   spell will see a cold-start delay, not a broken app.
 - Each workspace gets **750 free instance-hours/month** shared across
   services; past that, free services pause until next month.
-
 
