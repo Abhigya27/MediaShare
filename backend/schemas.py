@@ -1,8 +1,10 @@
 import uuid
 from datetime import datetime
+from typing import Optional
+
 from fastapi_users import schemas
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PostCreate(BaseModel):
@@ -21,12 +23,14 @@ class PostResponse(BaseModel):
 
 
 class UserRead(schemas.BaseUser[uuid.UUID]):
-    pass
+    username: str
 
 
 class UserCreate(schemas.BaseUserCreate):
-    pass
+    username: str = Field(min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$")
 
 
 class UserUpdate(schemas.BaseUserUpdate):
-    pass
+    username: Optional[str] = Field(
+        default=None, min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$"
+    )
