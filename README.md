@@ -1,8 +1,8 @@
 # 📸 MediaShare
 
 <!-- TODO: replace with your actual Render URL once deployed -->
-### 🔗 [**Check it out — Live Demo**](https://your-app-name.onrender.com)
-*(API docs / Swagger UI: [`/docs`](https://your-api-name.onrender.com/docs))*
+### 🔗 [**Check it out — Live Demo**](https://mediashare-3.onrender.com)
+*(API docs / Swagger UI: [`/docs`](https://mediashare-1-a705.onrender.com/docs))*
 
 ![Python](https://img.shields.io/badge/Python-3.12+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
