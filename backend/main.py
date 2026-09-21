@@ -1,11 +1,13 @@
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from backend.db import Post, create_db_model, get_session, User
 from backend.schemas import PostResponse
+from backend.rate_limit import enforce_post_rate_limit
 from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
-from sqlalchemy import select
+from sqlalchemy import select, func
 from backend.imagekt import imagekit
+from math import ceil
 import uuid
 import os
 import shutil
@@ -41,7 +43,8 @@ app.include_router(
 
 @app.post("/post", response_model=PostResponse, status_code=201)
 async def upload(file: UploadFile = File(...), title: str = Form(""),
-                 session: AsyncSession = Depends(get_session), user: User = Depends(current_active_user)):
+                 session: AsyncSession = Depends(get_session),
+                 user: User = Depends(enforce_post_rate_limit)):
 
     temp_file_path = None
     try:
@@ -76,6 +79,8 @@ async def upload(file: UploadFile = File(...), title: str = Form(""),
         await session.refresh(post)
         return post
 
+    except HTTPException:
+        raise
     except Exception as e:
         await session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -86,13 +91,25 @@ async def upload(file: UploadFile = File(...), title: str = Form(""),
 
 
 @app.get("/feed")
-async def get_feed(session: AsyncSession = Depends(get_session), user: User = Depends(current_active_user)):
-    result = await session.execute(select(Post).order_by(Post.created_at.desc()))
+async def get_feed(
+    page: int = Query(1, ge=1, description="1-indexed page number"),
+    page_size: int = Query(10, ge=1, le=50, description="Posts per page"),
+    session: AsyncSession = Depends(get_session),
+    user: User = Depends(current_active_user),
+):
+    offset = (page - 1) * page_size
+
+    total_result = await session.execute(select(func.count()).select_from(Post))
+    total_posts = total_result.scalar_one()
+
+    result = await session.execute(
+        select(Post).order_by(Post.created_at.desc()).offset(offset).limit(page_size)
+    )
     posts = result.scalars().all()
 
     result = await session.execute(select(User))
     users = [row[0] for row in result.all()]
-    user_dict = {u.id: u.email for u in users}
+    user_dict = {u.id: u.username for u in users}
 
     posts_data = []
     for post in posts:
@@ -106,10 +123,19 @@ async def get_feed(session: AsyncSession = Depends(get_session), user: User = De
                 "file_name": post.file_name,
                 "created_at": post.created_at.isoformat(),
                 "is_owner": post.user_id == user.id,
-                "email": user_dict.get(post.user_id, "Unknown")
+                "username": user_dict.get(post.user_id, "Unknown"),
             }
         )
-    return {"posts": posts_data}
+
+    total_pages = ceil(total_posts / page_size) if total_posts else 1
+
+    return {
+        "posts": posts_data,
+        "page": page,
+        "page_size": page_size,
+        "total_posts": total_posts,
+        "total_pages": total_pages,
+    }
 
 
 @app.delete("/posts/{post_id}")
@@ -128,5 +154,7 @@ async def delete_post(post_id: str, session: AsyncSession = Depends(get_session)
         await session.commit()
 
         return {"message": "post deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
