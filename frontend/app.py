@@ -74,7 +74,7 @@ def login_page():
                     # email internally, so we generate a hidden placeholder
                     # one from the username -- the user never sees or uses it.
                     signup_data = {
-                        "email": f"{username}@mediashare.local",
+                        "email": f"{username}@mediashare.com",
                         "username": username,
                         "password": password,
                     }
