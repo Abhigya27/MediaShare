@@ -189,12 +189,4 @@ upload something, confirm it shows in the feed.
 - Each workspace gets **750 free instance-hours/month** shared across
   services; past that, free services pause until next month.
 
-## 🗺️ Roadmap
 
-Things that would take this from "portfolio demo" to "production-ready":
-
-- [ ] Test suite (`pytest` + `httpx.AsyncClient`, mocked ImageKit calls)
-- [ ] Alembic migrations in place of the hand-rolled `ALTER TABLE` logic
-- [ ] Redis-backed rate limiter (current one is in-memory, single-process only)
-- [ ] Dockerfile + CI (GitHub Actions: tests + lint on push)
-- [ ] Background job queue for media processing instead of inline upload handling
