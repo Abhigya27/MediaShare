@@ -8,9 +8,12 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
 ![Streamlit](https://img.shields.io/badge/Streamlit-frontend-FF4B4B)
 
-A media-sharing app with a FastAPI backend and a Streamlit frontend. Users
+An Instagramesque media-sharing app with a FastAPI backend and a Streamlit frontend. Users
 sign up, upload photos/videos (stored and served via ImageKit's CDN), and
 browse a paginated feed of everyone's posts.
+
+The application uses a **PostgreSQL database hosted on Supabase**, with
+SQLAlchemy for async database access and FastAPI for the API layer.
 
 Built primarily as a **backend showcase** — the focus is the API layer:
 authentication, authorization, rate limiting, and data access, not the UI.
@@ -33,7 +36,7 @@ authentication, authorization, rate limiting, and data access, not the UI.
 graph LR
     U[Browser] --> S[Streamlit Frontend]
     S -->|HTTPS + JWT| A[FastAPI Backend]
-    A -->|async SQLAlchemy| D[(PostgreSQL / SQLite)]
+    A -->|async SQLAlchemy| D[(Supabase PostgreSQL)]
     A -->|upload| I[ImageKit CDN]
     S -->|render media| I
 ```
@@ -49,10 +52,10 @@ separately.
 | API framework       | FastAPI                                                       |
 | Auth                | fastapi-users (OAuth2 password flow + JWT)                    |
 | Password hashing    | bcrypt via `pwdlib`                                            |
-| ORM / DB driver     | SQLAlchemy 2.0 (async) — SQLite (dev) / PostgreSQL (prod)      |
+| ORM / DB driver     | SQLAlchemy 2.0 (async) — PostgreSQL via Supabase              |
 | Media storage/CDN   | ImageKit.io                                                    |
 | Frontend            | Streamlit                                                      |
-| Deployment          | Render                                                         |
+| Deployment          | Render + Supabase PostgreSQL                                    |
 
 ## 📁 Project structure
 
@@ -74,7 +77,7 @@ separately.
 
 ## 🚀 Getting started (local)
 
-**Prerequisites:** Python 3.11+, an [ImageKit](https://imagekit.io/) account (free tier works).
+**Prerequisites:** Python 3.11+, a [Supabase](https://supabase.com/) project with a PostgreSQL database, and an [ImageKit](https://imagekit.io/) account (free tier works).
 
 ```bash
 git clone <your-repo-url>
@@ -86,6 +89,12 @@ source venv/bin/activate      # Windows: venv\Scripts\activate
 uv sync
 
 cp .env.example .env          # then fill in your own values
+```
+
+Set your `DATABASE_URL` to your Supabase Postgres connection string in async SQLAlchemy format, for example:
+
+```bash
+postgresql+asyncpg://postgres:YOUR_PASSWORD@db.<project-ref>.supabase.co:5432/postgres
 ```
 
 Run the backend and frontend in **two separate terminals**, both from the
@@ -106,7 +115,7 @@ streamlit run app.py
 
 | Variable                      | Required | Default                 | Notes                                                                 |
 |--------------------------------|----------|---------------------------|-------------------------------------------------------------------------|
-| `DATABASE_URL`                 | Yes      | —                          | Async SQLAlchemy URL. `sqlite+aiosqlite:///./app.db` locally, `postgresql+asyncpg://...` in production |
+| `DATABASE_URL`                 | Yes      | —                          | Async SQLAlchemy URL for your Supabase PostgreSQL database, e.g. `postgresql+asyncpg://...` |
 | `SECRET`                       | Yes      | —                          | 32+ char random string that signs JWTs. Generate: `python -c "import secrets; print(secrets.token_hex(32))"` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES`  | No       | `20`                       | JWT access-token lifetime                                                |
 | `IMAGEKIT_PRIVATE_KEY`         | Yes      | —                          | From your ImageKit dashboard                                             |
@@ -135,24 +144,22 @@ Full schema and a try-it-out console: `/docs`.
 The app deploys as **two separate Render Web Services** from the same repo:
 one for the FastAPI backend, one for the Streamlit frontend.
 
-> **Why not SQLite in production?** Render's free web services have an
-> **ephemeral filesystem** — persistent disks require a paid plan — so a
-> SQLite file would get wiped on every restart/redeploy. Use Postgres in
-> production; SQLite is still perfectly fine (and zero-setup) for local dev.
+> **Why Supabase Postgres?** Render's free web services have an
+> **ephemeral filesystem**, so a local SQLite file would be wiped on redeploys.
+> Using a managed PostgreSQL service like Supabase keeps the database persistent
+> and production-ready.
 
 ### 1. Push to GitHub
 Render deploys from a connected Git repo.
 
-### 2. Create a Postgres database
-- Render Dashboard → **New → PostgreSQL** → note the **Internal Database URL**.
-- Render's free Postgres instance works, but **expires 30 days after
-  creation** (with a 14-day grace period to upgrade before deletion) — fine
-  for a quick demo, but annoying for a portfolio piece you want to stay up.
-  For something that doesn't need upkeep, point `DATABASE_URL` at a
-  permanent free tier instead (e.g. [Neon](https://neon.tech) or
-  [Supabase](https://supabase.com)) — same steps below either way.
-- Whatever the source, rewrite the URL's scheme for the async driver:
+### 2. Create a PostgreSQL database with Supabase
+- Create a new project in [Supabase](https://supabase.com) and open your database settings.
+- Copy the **Connection string** for your Postgres database.
+- Update the URL for SQLAlchemy's async driver:
   `postgresql://...` → `postgresql+asyncpg://...`
+- Set that value in the backend's `DATABASE_URL` environment variable.
+
+This app is designed to use **Supabase PostgreSQL** as the persistent database for the app.
 
 ### 3. Deploy the backend
 Render Dashboard → **New → Web Service** → select your repo.
